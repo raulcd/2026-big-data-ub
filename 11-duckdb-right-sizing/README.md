@@ -123,6 +123,8 @@ Note what just happened: there is **no DataFrame in memory**. DuckDB read the Pa
 
 ### Exercise 3: Glob Across All 12 Months (8 min)
 
+> **What's new vs Session 03 / Assignment 1**: you've already measured **column pruning** with `pq.read_table(columns=[...])`. Here we're testing the other half of the story; **row-group skipping via predicate pushdown**, where a `WHERE` clause gets pushed into the Parquet reader so entire row groups are skipped without ever being decoded. Same dataset, different mechanism.
+
 **Q3a.** Count rows across the entire 2024 dataset using a glob pattern. How many trips happened in 2024?
 
 **Q3b.** Now count only the trips with `fare_amount > 200`. Time both queries. Why is the second one not 200× slower than the first, given that you're filtering down to a tiny fraction of rows?
@@ -486,6 +488,8 @@ Notice we never wrote that Arrow Table to disk; never serialized it across a wir
 ---
 
 ### Exercise 9: Mini ETL;  Write Partitioned Parquet (10 min)
+
+> **What's new vs Session 03 / Assignment 1**: you've already written partitioned Parquet on this same dataset using `pq.write_to_dataset(partition_cols=[...])`. The outcome is the same here; the **how** is different. PyArrow's writer needs the full Arrow Table loaded in memory first, so it's bounded by your RAM. DuckDB's `COPY ... TO ... (PARTITION_BY (...))` runs as a **streaming pipeline** in an embedded engine: scan the input Parquet files, aggregate, and write the partitioned output without ever materializing the full dataset. It scales past RAM, runs in parallel, and is one SQL statement instead of three Python steps. That's the embedded-database angle.
 
 A common pattern: read raw data, aggregate it, write the aggregate as partitioned Parquet for downstream consumers (BI tools, the next pipeline stage, an Iceberg table). DuckDB does this in one statement.
 
